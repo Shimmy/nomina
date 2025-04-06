@@ -54,6 +54,7 @@ class NominaLlm:
         self.site_url = site_url
         self.site_name = site_name
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.models_url = "https://openrouter.ai/api/v1/models"
         self.default_model = default_model
         self.tools: List[Tool] = []
         self.tool_funcs: Dict[str, Callable] = {}
@@ -86,7 +87,6 @@ class NominaLlm:
         conversation = list(messages)
 
         while True:
-            # Prepare payload
             payload = ChatPayload(
                 model=model or self.default_model,
                 messages=conversation,
@@ -102,26 +102,32 @@ class NominaLlm:
             tool_calls = msg.get("tool_calls", [])
 
             if tool_calls:
-                # append assistant message containing the tool calls
                 conversation.append(msg)
 
                 for call in tool_calls:
                     fn = call["function"]["name"]
                     args = json.loads(call["function"]["arguments"])
-                    #print(f"ℹ️  Assistant called `{fn}` with {args}")
-
                     try:
                         result = self.tool_funcs[fn](**args)
                     except Exception as e:
                         result = f"Error calling `{fn}`: {e}"
 
-                    # append tool result
                     conversation.append(Message(
                         role="tool",
                         content=str(result),
                         tool_call_id=call["id"]
                     ))
-                # Loop continues: next generation with updated messages
             else:
-                # No tool calls --> done!
                 return response_json
+
+    def list_models(self) -> List[Dict[str, str]]:
+        """Fetch list of available OpenRouter models"""
+        response = requests.get(self.models_url, headers=self._build_headers())
+        response.raise_for_status()
+        data = response.json()
+        models = []
+        for m in data.get("data", []):
+            model_id = m.get("id")
+            model_name = m.get("name") or model_id
+            models.append({"id": model_id, "name": model_name})
+        return models

@@ -1,13 +1,13 @@
 import os
 import subprocess
 from textual.app import App
-from textual.containers import Container, Horizontal
-from textual.widgets import Header, Footer, Static, TextArea, Input, Button
+from textual.containers import Container, Horizontal, Vertical
+from textual.widgets import Header, Footer, Static, TextArea, Input, Button, Label, Select
 from textual import on
 from textual.binding import Binding
 from textual.worker import Worker
 from .nominallm import NominaLlm
-from textual.widgets import Static, TextArea, Tabs, Tab
+from textual.widgets import Tabs, Tab
 import re
 
 def _sanitize_id(title: str) -> str:
@@ -118,11 +118,60 @@ class ChatPanel(Container):
             self.app.on_message_submitted(message)
         input_widget.focus()
 
+class ModelPicker(Container):
+    def compose(self):
+        yield Label("Select OpenRouter Model:", id="model-label")
+        self.select = Select(options=[], id="model-select")
+        yield self.select
+        yield Button("Set Model", id="set-model-btn")
+        yield Button("Cancel", id="cancel-model-btn")
+
+    async def on_mount(self) -> None:
+        self.app.update_status("Fetching models...")
+        self.app.run_worker(self.load_models, exclusive=True, name="fetch_models")
+
+    async def load_models(self) -> None:
+        import asyncio
+        def blocking_fetch():
+            try:
+                models = self.app.llm.list_models()
+                # FIX: create options as tuples (label, value)
+                return [(m["name"], m["id"]) for m in models]
+            except Exception as e:
+                return f"Model fetch failed: {e}"
+
+        loop = asyncio.get_event_loop()
+        options = await loop.run_in_executor(None, blocking_fetch)
+        if isinstance(options, str):
+            self.app.update_status(options)
+            return
+        container = self
+        old_select = container.query_one("#model-select", Select)
+        await old_select.remove()
+        new_select = Select(options=options, id="model-select")
+        self.select = new_select
+        cancel_btn = container.query_one("#cancel-model-btn", Button)
+        await container.mount(new_select, before=cancel_btn)
+        self.app.update_status("Models loaded." if options else "No models found.")
+
+    @on(Button.Pressed, "#set-model-btn")
+    def set_model(self):
+        sel = self.query_one("#model-select", Select)
+        selected = sel.value
+        self.app.llm.default_model = selected
+        self.app.update_status(f"Model set to: {selected}")
+        self.remove()
+
+    @on(Button.Pressed, "#cancel-model-btn")
+    def cancel_picker(self):
+        self.remove()
+
 class SimpleTUI(App):
     TITLE = "Simple TUI"
     BINDINGS = [
         Binding("q", "quit", "Quit", key_display="q"),
         Binding("f1", "help", "Help", key_display="F1"),
+        Binding("f2", "pick_model", "Select Model", key_display="F2")
     ]
 
     def __init__(self, *args, **kwargs):
@@ -157,8 +206,12 @@ Simple TUI Help:
 - The file pane on the right shows content
 - Press 'q' to quit the application
 - Press 'F1' to show this help
+- Press F2 to pick the OpenRouter model
 """
         self.add_chat_message("assistant", help_text)
+
+    def action_pick_model(self):
+        self.mount(ModelPicker(), before="#status-bar")
 
     def set_file_content(self, title: str, content: str) -> None:
         try:
@@ -313,7 +366,6 @@ class MyApp(SimpleTUI):
         response = await run_in_thread(self.llm.chat, self.history)
         reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
         self.add_chat_message("assistant", reply)
-        # Append assistant reply to history
         self.history.append(self.llm.make_text_message("assistant", reply))
         self.update_status("Ready")
 
