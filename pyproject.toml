@@ -9,8 +9,9 @@ description = "Autonomous coding assistant with jailed shell"
 authors = [{ name="Conny Dahlgren", email="conny.dahlgren@devsec.se" }]
 dependencies = [
     "requests",
-    "pydantic"
+    "pydantic",
+    "textual"
 ]
 
 [project.scripts]
-nomina = "nomina.cli:main"
+nomina = "nomina.nomina:main"
