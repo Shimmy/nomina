@@ -10,7 +10,8 @@ authors = [{ name="Conny Dahlgren", email="conny.dahlgren@devsec.se" }]
 dependencies = [
     "requests",
     "pydantic",
-    "textual"
+    "textual",
+    "textual[syntax]"
 ]
 
 [project.scripts]
