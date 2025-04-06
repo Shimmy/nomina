@@ -9,8 +9,10 @@ from textual.worker import Worker
 from .nominallm import NominaLlm
 from textual.widgets import Static, TextArea, Tabs, Tab
 import re
+
 def _sanitize_id(title: str) -> str:
     return re.sub(r"[^a-zA-Z0-9_-]", "_", title)
+
 system_prompt2 = """
 You are Nomina, an autonomous coding and shell assistant.
 
@@ -26,6 +28,7 @@ You are Nomina, an autonomous coding and shell assistant.
 - Always report your **final status** succinctly.
 - Be careful with shell commands.
 """
+
 system_prompt = """
 You are Nomina, an autonomous coding and shell assistant.
 
@@ -63,10 +66,6 @@ class FileViewer(Container):
     def set_content(self, title: str, content: str, language: str = "python") -> None:
         tab_id = _sanitize_id(title)
         self.tab_contents[tab_id] = (title, content, language)
-
-        #file_title = self.query_one("#file-title", Static)
-        #file_title.update(title)
-
         file_content = self.query_one("#file-content", TextArea)
         file_content.text = content
         file_content.language = language
@@ -74,17 +73,12 @@ class FileViewer(Container):
     def add_tab(self, title: str) -> None:
         tab_id = _sanitize_id(title)
         if tab_id in self.added_tabs:
-            return  # Already added
-
+            return
         self.added_tabs.add(tab_id)
-
         tabs = self.query_one("#file-tabs", Tabs)
         tabs.add_tab(Tab(title, id=tab_id))
-
         if tabs.active is None:
             tabs.active = tab_id
-
-
 
     @on(Tabs.TabActivated)
     def on_tab_activated(self, event: Tabs.TabActivated) -> None:
@@ -92,8 +86,6 @@ class FileViewer(Container):
         if tab_id in self.tab_contents:
             title, content, lang = self.tab_contents[tab_id]
             self.set_content(title, content, lang)
-
-
 
 class ChatPanel(Container):
     def compose(self):
@@ -113,7 +105,6 @@ class ChatPanel(Container):
             chat_area.scroll_home(animate=False)
             for _ in range(line_count + 10):
                 chat_area.scroll_down(animate=False)
-
         self.query_one("#chat-input", Input).focus()
 
     @on(Input.Submitted, "#chat-input")
@@ -121,15 +112,11 @@ class ChatPanel(Container):
         message = event.value.strip()
         if not message:
             return
-
         input_widget = self.query_one("#chat-input", Input)
         input_widget.value = ""
-
         if hasattr(self.app, 'on_message_submitted'):
             self.app.on_message_submitted(message)
-
         input_widget.focus()
-
 
 class SimpleTUI(App):
     TITLE = "Simple TUI"
@@ -159,7 +146,6 @@ class SimpleTUI(App):
         chat_panel = self.query_one("#chat-panel", ChatPanel)
         welcome_text = f"Welcome to Simple TUI!\n\nWorking in directory: {self.working_dir}"
         chat_panel.add_message("assistant", welcome_text)
-
         input_box = self.query_one("#chat-input")
         input_box.focus()
 
@@ -181,9 +167,6 @@ Simple TUI Help:
             viewer.set_content(title, content)
         except Exception as e:
             self.update_status(f"UI update error: {e}")
-            # Do not propagate the error
-
-
 
     def add_chat_message(self, sender: str, message: str) -> None:
         chat_panel = self.query_one("#chat-panel", ChatPanel)
@@ -194,7 +177,7 @@ Simple TUI Help:
         status_bar.update_status(message)
 
 def safe_path(path):
-    jail_dir = os.getcwd()    
+    jail_dir = os.getcwd()
     abs_path = os.path.abspath(os.path.join(jail_dir, path))
     if not abs_path.startswith(jail_dir):
         raise Exception(f"Access outside jail is denied: {abs_path}")
@@ -207,13 +190,9 @@ def make_write_file_tool(app):
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             with open(full_path, "w") as f:
                 f.write(content)
-
-            # Safely update UI from background thread
             def update_ui():
                 app.set_file_content(filepath, content)
-
             app.call_from_thread(update_ui)
-
             return f"File written successfully: {filepath}"
         except Exception as e:
             raise RuntimeError(f"write_file failed: {e}")
@@ -221,21 +200,13 @@ def make_write_file_tool(app):
 
 def make_read_file_tool(app):
     def read_file(filepath):
-        """Read file contents."""
         try:
-            
             full = safe_path(filepath)
-            
-            # Read the file
             with open(full) as f:
                 content = f.read()
-            
-            # Safely update UI from background thread
             def update_ui():
                 app.set_file_content(filepath, content)
-
             app.call_from_thread(update_ui)
-                
             return content
         except Exception as e:
             raise RuntimeError(f"read_file failed: {e}")
@@ -246,7 +217,6 @@ def make_list_files_tool(app):
         try:
             full_path = safe_path(directory)
             entries = os.listdir(full_path)
-
             lines = []
             for entry in entries:
                 entry_path = os.path.join(full_path, entry)
@@ -254,27 +224,20 @@ def make_list_files_tool(app):
                     lines.append(entry + "/")
                 else:
                     lines.append(entry)
-
             output = "The directory contains:\n" + "\n".join(sorted(lines))
-
             def update_ui():
                 app.set_file_content(f"ls {directory}/", output)
-
             app.call_from_thread(update_ui)
-
             return output
         except Exception as e:
             raise RuntimeError(f"list_files failed: {e}")
     return list_files
-
-
 
 def make_delete_file_tool(app):
     def delete_file(filepath):
         try:
             full_path = safe_path(filepath)
             os.remove(full_path)
-
             return f"File deleted: {filepath}"
         except Exception as e:
             raise RuntimeError(f"delete_file failed: {e}")
@@ -285,7 +248,6 @@ def make_create_directory_tool(app):
         try:
             full_path = safe_path(directory)
             os.makedirs(full_path, exist_ok=True)
-
             return f"Directory created: {directory}"
         except Exception as e:
             raise RuntimeError(f"create_directory failed: {e}")
@@ -296,8 +258,6 @@ def make_remove_directory_tool(app):
         try:
             full_path = safe_path(directory)
             os.rmdir(full_path)
-
-
             return f"Directory removed: {directory}"
         except Exception as e:
             raise RuntimeError(f"remove_directory failed: {e}")
@@ -307,12 +267,9 @@ def make_shell_command_tool(app):
     def shell_command(command):
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True)
-
             def update_ui():
                 app.set_file_content(command, f"{result.stdout}\n{result.stderr}")
-
             app.call_from_thread(update_ui)
-
             return {
                 "stdout": result.stdout,
                 "stderr": result.stderr,
@@ -344,10 +301,7 @@ class MyApp(SimpleTUI):
     def on_message_submitted(self, message: str) -> None:
         self.add_chat_message("user", message)
         self.update_status("Thinking...")
-        self.history = [
-            self.llm.make_text_message("system", self.system_prompt),
-            self.llm.make_text_message("user", message)
-        ]
+        self.history.append(self.llm.make_text_message("user", message))
         self.run_worker(self.llm_worker, exclusive=True, name="llm")
 
     async def llm_worker(self) -> None:
@@ -359,8 +313,9 @@ class MyApp(SimpleTUI):
         response = await run_in_thread(self.llm.chat, self.history)
         reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
         self.add_chat_message("assistant", reply)
+        # Append assistant reply to history
+        self.history.append(self.llm.make_text_message("assistant", reply))
         self.update_status("Ready")
-
 
 def main():
     app = MyApp()
