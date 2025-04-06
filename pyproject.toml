@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nomina"
+version = "0.1.0"
+description = "Autonomous coding assistant with jailed shell"
+authors = [{ name="Conny Dahlgren", email="conny.dahlgren@devsec.se" }]
+dependencies = [
+    "requests",
+    "pydantic"
+]
+
+[project.scripts]
+nomina = "nomina.cli:main"
