@@ -46,7 +46,7 @@ class StatusBar(Static):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.status = "Ready"
-
+    
     def update_status(self, message: str) -> None:
         self.status = message
         self.update(f"Status: {self.status}")
@@ -57,12 +57,12 @@ class FileViewer(Container):
         super().__init__(*args, **kwargs)
         self.added_tabs = set()
         self.tab_contents = {}
-
+    
     def compose(self):
         yield Static("Files", id="file-title")
         yield Tabs(id="file-tabs")
-        yield TextArea(id="file-content", read_only=True, language="python")
-
+        yield TextArea(id="file-content", read_only=True, language="python")    
+    
     def set_content(self, title: str, content: str, language: str = "python") -> None:
         tab_id = _sanitize_id(title)
         self.tab_contents[tab_id] = (title, content, language)
@@ -70,6 +70,11 @@ class FileViewer(Container):
         file_content.text = content
         file_content.language = language
 
+        # Activate the tab that matches the content
+        tabs = self.query_one("#file-tabs", Tabs)
+        if tabs.active != tab_id:
+            tabs.active = tab_id
+    
     def add_tab(self, title: str) -> None:
         tab_id = _sanitize_id(title)
         if tab_id in self.added_tabs:
@@ -79,7 +84,7 @@ class FileViewer(Container):
         tabs.add_tab(Tab(title, id=tab_id))
         if tabs.active is None:
             tabs.active = tab_id
-
+    
     @on(Tabs.TabActivated)
     def on_tab_activated(self, event: Tabs.TabActivated) -> None:
         tab_id = event.tab.id
@@ -87,26 +92,28 @@ class FileViewer(Container):
             title, content, lang = self.tab_contents[tab_id]
             self.set_content(title, content, lang)
 
+
 class ChatPanel(Container):
     def compose(self):
         yield Static("Chat History", id="chat-title")
         yield TextArea(read_only=True, id="chat-history")
-        yield Input(placeholder="Type your message and press Enter...", id="chat-input")
-
+        yield Input(placeholder="Type your message and press Enter...", id="chat-input")    
+    
     def add_message(self, sender: str, message: str) -> None:
         chat_area = self.query_one("#chat-history", TextArea)
         prefix = "🤖 Assistant:" if sender == "assistant" else "You:"
         current_text = chat_area.text
-        new_text = current_text + f"\n{prefix}\n{message}\n"
+        new_text = current_text + f"\n{prefix}\n{message}\
+"
         chat_area.text = new_text
-
-        line_count = new_text.count('\n')
+        
+        line_count = new_text.count('\\n')
         if hasattr(chat_area, 'scroll_home'):
             chat_area.scroll_home(animate=False)
             for _ in range(line_count + 10):
                 chat_area.scroll_down(animate=False)
         self.query_one("#chat-input", Input).focus()
-
+    
     @on(Input.Submitted, "#chat-input")
     def handle_message_submission(self, event: Input.Submitted) -> None:
         message = event.value.strip()
@@ -117,6 +124,7 @@ class ChatPanel(Container):
         if hasattr(self.app, 'on_message_submitted'):
             self.app.on_message_submitted(message)
         input_widget.focus()
+    
 
 class ModelPicker(Container):
     def compose(self):
@@ -125,11 +133,11 @@ class ModelPicker(Container):
         yield self.select
         yield Button("Set Model", id="set-model-btn")
         yield Button("Cancel", id="cancel-model-btn")
-
+    
     async def on_mount(self) -> None:
         self.app.update_status("Fetching models...")
-        self.app.run_worker(self.load_models, exclusive=True, name="fetch_models")
-
+        self.app.run_worker(self.load_models, exclusive=True, name="fetch_models")    
+    
     async def load_models(self) -> None:
         import asyncio
         def blocking_fetch():
@@ -139,13 +147,13 @@ class ModelPicker(Container):
                 return [(m["name"], m["id"]) for m in models]
             except Exception as e:
                 return f"Model fetch failed: {e}"
-
+        
         loop = asyncio.get_event_loop()
         options = await loop.run_in_executor(None, blocking_fetch)
         if isinstance(options, str):
             self.app.update_status(options)
             return
-        container = self
+        container = self    
         old_select = container.query_one("#model-select", Select)
         await old_select.remove()
         new_select = Select(options=options, id="model-select")
@@ -153,7 +161,7 @@ class ModelPicker(Container):
         cancel_btn = container.query_one("#cancel-model-btn", Button)
         await container.mount(new_select, before=cancel_btn)
         self.app.update_status("Models loaded." if options else "No models found.")
-
+    
     @on(Button.Pressed, "#set-model-btn")
     def set_model(self):
         sel = self.query_one("#model-select", Select)
@@ -161,10 +169,11 @@ class ModelPicker(Container):
         self.app.llm.default_model = selected
         self.app.update_status(f"Model set to: {selected}")
         self.remove()
-
+    
     @on(Button.Pressed, "#cancel-model-btn")
     def cancel_picker(self):
         self.remove()
+
 
 class SimpleTUI(App):
     TITLE = "Simple TUI"
@@ -173,11 +182,11 @@ class SimpleTUI(App):
         Binding("f1", "help", "Help", key_display="F1"),
         Binding("f2", "pick_model", "Select Model", key_display="F2")
     ]
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.working_dir = os.getcwd()
-
+        self.working_dir = os.getcwd()   
+    
     def compose(self) -> Container:
         yield Header()
         yield Container(
@@ -190,29 +199,27 @@ class SimpleTUI(App):
         )
         yield StatusBar(id="status-bar")
         yield Footer()
-
-    def on_mount(self) -> None:
-        chat_panel = self.query_one("#chat-panel", ChatPanel)
+    
+    def on_mount(self) -> None: 
+        chat_panel = self.query_one("#chat-panel", ChatPanel)  
         welcome_text = f"Welcome to Simple TUI!\n\nWorking in directory: {self.working_dir}"
         chat_panel.add_message("assistant", welcome_text)
         input_box = self.query_one("#chat-input")
-        input_box.focus()
-
-    def action_help(self) -> None:
-        help_text = """
-Simple TUI Help:
+        input_box.focus()    
+    
+    def action_help(self) -> None:    
+        help_text = """Simple TUI Help:    
 
 - Enter messages in the input box and press Enter to send
 - The file pane on the right shows content
 - Press 'q' to quit the application
 - Press 'F1' to show this help
-- Press F2 to pick the OpenRouter model
-"""
+- Press F2 to pick the OpenRouter model"""
         self.add_chat_message("assistant", help_text)
-
+    
     def action_pick_model(self):
         self.mount(ModelPicker(), before="#status-bar")
-
+    
     def set_file_content(self, title: str, content: str) -> None:
         try:
             viewer = self.query_one("#file-viewer", FileViewer)
@@ -220,14 +227,15 @@ Simple TUI Help:
             viewer.set_content(title, content)
         except Exception as e:
             self.update_status(f"UI update error: {e}")
-
+    
     def add_chat_message(self, sender: str, message: str) -> None:
         chat_panel = self.query_one("#chat-panel", ChatPanel)
         chat_panel.add_message(sender, message)
-
+    
     def update_status(self, message: str) -> None:
         status_bar = self.query_one("#status-bar", StatusBar)
         status_bar.update_status(message)
+
 
 def safe_path(path):
     jail_dir = os.getcwd()
@@ -256,7 +264,7 @@ def make_read_file_tool(app):
         try:
             full = safe_path(filepath)
             with open(full) as f:
-                content = f.read()
+                content = f.read()    
             def update_ui():
                 app.set_file_content(filepath, content)
             app.call_from_thread(update_ui)
@@ -323,26 +331,21 @@ def make_shell_command_tool(app):
             def update_ui():
                 app.set_file_content(command, f"{result.stdout}\n{result.stderr}")
             app.call_from_thread(update_ui)
-            return {
-                "stdout": result.stdout,
-                "stderr": result.stderr,
-                "returncode": result.returncode
-            }
+            return {"stdout": result.stdout, "stderr": result.stderr, "returncode": result.returncode}
         except Exception as e:
             raise RuntimeError(f"shell_command failed: {e}")
     return shell_command
+
 
 class MyApp(SimpleTUI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.llm = NominaLlm()
         self.system_prompt = system_prompt
-        self.history = [
-            self.llm.make_text_message("system", self.system_prompt)
-        ]
-
+        self.history = [self.llm.make_text_message("system", self.system_prompt)]   
+    
     def on_mount(self):
-        super().on_mount()
+        super().on_mount()  
         self.llm.add_tool(make_write_file_tool(self))
         self.llm.add_tool(make_read_file_tool(self))
         self.llm.add_tool(make_list_files_tool(self))
@@ -350,28 +353,29 @@ class MyApp(SimpleTUI):
         self.llm.add_tool(make_create_directory_tool(self))
         self.llm.add_tool(make_remove_directory_tool(self))
         self.llm.add_tool(make_shell_command_tool(self))
-
+    
     def on_message_submitted(self, message: str) -> None:
         self.add_chat_message("user", message)
         self.update_status("Thinking...")
         self.history.append(self.llm.make_text_message("user", message))
         self.run_worker(self.llm_worker, exclusive=True, name="llm")
-
+    
     async def llm_worker(self) -> None:
         import asyncio
         async def run_in_thread(func, *args, **kwargs):
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(None, func, *args, **kwargs)
-
+        
         response = await run_in_thread(self.llm.chat, self.history)
         reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
         self.add_chat_message("assistant", reply)
         self.history.append(self.llm.make_text_message("assistant", reply))
         self.update_status("Ready")
 
+
 def main():
     app = MyApp()
     app.run()
-
+    
 if __name__ == "__main__":
     main()
