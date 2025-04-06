@@ -202,7 +202,7 @@ class ModelPicker(Container):
 
 
 class SimpleTUI(App):
-    CSS_PATH = "nomina/style.css"
+    CSS_PATH = "style.css"
     TITLE = "Simple TUI"
     BINDINGS = [
         Binding("q", "quit", "Quit", key_display="q"),
