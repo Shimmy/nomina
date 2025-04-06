@@ -322,49 +322,49 @@ def make_shell_command_tool(app):
             raise RuntimeError(f"shell_command failed: {e}")
     return shell_command
 
-if __name__ == "__main__":
-    class MyApp(SimpleTUI):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.llm = NominaLlm()
-            self.system_prompt = system_prompt
-            self.history = [
-                self.llm.make_text_message("system", self.system_prompt)
-            ]
-            #for func in [write_file]:
-            #    self.llm.add_tool(func)
-        def on_mount(self):
-            super().on_mount()
-            # Register tools *after* UI is mounted
-            self.llm.add_tool(make_write_file_tool(self))
-            self.llm.add_tool(make_read_file_tool(self))
-            self.llm.add_tool(make_list_files_tool(self))
-            self.llm.add_tool(make_delete_file_tool(self))
-            self.llm.add_tool(make_create_directory_tool(self))
-            self.llm.add_tool(make_remove_directory_tool(self))
-            self.llm.add_tool(make_shell_command_tool(self))
-        def on_message_submitted(self, message: str) -> None:
-            self.add_chat_message("user", message)
-            self.update_status("Thinking...")
+class MyApp(SimpleTUI):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.llm = NominaLlm()
+        self.system_prompt = system_prompt
+        self.history = [
+            self.llm.make_text_message("system", self.system_prompt)
+        ]
 
-            self.history = [
-                self.llm.make_text_message("system", self.system_prompt),
-                self.llm.make_text_message("user", message)
-            ]
+    def on_mount(self):
+        super().on_mount()
+        self.llm.add_tool(make_write_file_tool(self))
+        self.llm.add_tool(make_read_file_tool(self))
+        self.llm.add_tool(make_list_files_tool(self))
+        self.llm.add_tool(make_delete_file_tool(self))
+        self.llm.add_tool(make_create_directory_tool(self))
+        self.llm.add_tool(make_remove_directory_tool(self))
+        self.llm.add_tool(make_shell_command_tool(self))
 
-            self.run_worker(self.llm_worker, exclusive=True, name="llm")
+    def on_message_submitted(self, message: str) -> None:
+        self.add_chat_message("user", message)
+        self.update_status("Thinking...")
+        self.history = [
+            self.llm.make_text_message("system", self.system_prompt),
+            self.llm.make_text_message("user", message)
+        ]
+        self.run_worker(self.llm_worker, exclusive=True, name="llm")
 
-        async def llm_worker(self) -> None:
-            import asyncio
+    async def llm_worker(self) -> None:
+        import asyncio
+        async def run_in_thread(func, *args, **kwargs):
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, func, *args, **kwargs)
 
-            async def run_in_thread(func, *args, **kwargs):
-              loop = asyncio.get_event_loop()
-              return await loop.run_in_executor(None, func, *args, **kwargs)
+        response = await run_in_thread(self.llm.chat, self.history)
+        reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+        self.add_chat_message("assistant", reply)
+        self.update_status("Ready")
 
-            response = await run_in_thread(self.llm.chat, self.history)
-            reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
-            self.add_chat_message("assistant", reply)
-            self.update_status("Ready")
 
+def main():
     app = MyApp()
     app.run()
+
+if __name__ == "__main__":
+    main()
