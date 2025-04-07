@@ -55,6 +55,8 @@ class NominaLlm:
         self.site_name = site_name
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
         self.models_url = "https://openrouter.ai/api/v1/models"
+        #self.models_url = "http://ailab.local:8181/v1/models"
+        #self.base_url = "http://ailab.local:8181/v1/chat/completions"
         self.default_model = default_model
         self.tools: List[Tool] = []
         self.tool_funcs: Dict[str, Callable] = {}

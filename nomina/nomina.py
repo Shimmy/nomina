@@ -66,7 +66,7 @@ class FileViewer(Container):
     def compose(self):
         yield Static("Activity", id="file-title")
         yield TabsWithClose(id="file-tabs")
-        yield TextArea.code_editor(id="file-content", read_only=True)
+        yield TextArea.code_editor(id="file-content", read_only=True, soft_wrap=True)
 
     def set_content(self, title: str, content: str, language: str = "python") -> None:
         tab_id = _sanitize_id(title)
@@ -115,7 +115,7 @@ class FileViewer(Container):
 class ChatPanel(Container):
     def compose(self):
         yield Static("Chat History", id="chat-title")
-        yield TextArea.code_editor(read_only=True, id="chat-history", language="markdown")
+        yield TextArea.code_editor(read_only=True, show_line_numbers=False, soft_wrap=True, id="chat-history", language="markdown")
         yield Horizontal(
             TextArea(id="chat-input", classes="chat-input"),
             Button("Send", id="send-button"),
@@ -125,7 +125,8 @@ class ChatPanel(Container):
 
     def add_message(self, sender: str, message: str) -> None:
         chat_area = self.query_one("#chat-history", TextArea)
-        prefix = "🤖 Assistant:" if sender == "assistant" else "You:"
+        #prefix = "\U0001F916 Assistant:" if sender == "assistant" else "You:"
+        prefix = sender
         current_text = chat_area.text
         new_text = current_text + f"\n{prefix}\n{message}\n"
         chat_area.text = new_text
@@ -420,7 +421,7 @@ class MyApp(SimpleTUI):
 
     def on_message_submitted(self, message: str) -> None:
         self.add_chat_message("user", message)
-        self.update_status("Thinking...")
+        self.update_status(f"{self.llm.default_model} is thinking... ")
         self.history.append(self.llm.make_text_message("user", message))
         self.run_worker(self.llm_worker, exclusive=True, name="llm")
 
@@ -433,7 +434,7 @@ class MyApp(SimpleTUI):
 
         response = await run_in_thread(self.llm.chat, self.history)
         reply = response.get("choices", [{}])[0].get("message", {}).get("content", "")
-        self.add_chat_message("assistant", reply)
+        self.add_chat_message(self.llm.default_model, reply)
         self.history.append(self.llm.make_text_message("assistant", reply))
         self.update_status("Ready")
 
