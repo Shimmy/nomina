@@ -114,21 +114,22 @@ class FileViewer(Container):
 
 class ChatPanel(Container):
     def compose(self):
-        yield Static("Chat History", id="chat-title")
-        yield TextArea.code_editor(read_only=True, show_line_numbers=False, soft_wrap=True, id="chat-history", language="markdown")
+        yield Static("Chat", id="chat-title")
+        yield TextArea(read_only=True, show_line_numbers=False, soft_wrap=True, id="chat-history", language="markdown")
         yield Horizontal(
             TextArea(id="chat-input", classes="chat-input"),
             Button("Send", id="send-button"),
             id="chat-input-container"
         )
+
         #yield Label("Type your message... (or click Send)", id="chat-hint")
 
     def add_message(self, sender: str, message: str) -> None:
         chat_area = self.query_one("#chat-history", TextArea)
-        #prefix = "\U0001F916 Assistant:" if sender == "assistant" else "You:"
-        prefix = sender
+        prefix = "You:" if sender == "user" else f"\U0001F916 {sender}:"
+        #prefix = sender
         current_text = chat_area.text
-        new_text = current_text + f"\n{prefix}\n{message}\n"
+        new_text = current_text + f"{prefix}\n{message}\n"
         chat_area.text = new_text
 
         line_count = new_text.count('\n')
@@ -233,8 +234,8 @@ class SimpleTUI(App):
     def on_mount(self) -> None:
         if not self.mounted:
             chat_panel = self.query_one("#chat-panel", ChatPanel)
-            welcome_text = f"Welcome to Nomina!\n\nWorking in directory: {self.working_dir}"
-            chat_panel.add_message("assistant", welcome_text)
+            welcome_text = f"Welcome to Nomina!\nWorking in directory: {self.working_dir}\nModel: {self.llm.default_model}"
+            chat_panel.add_message("Nomina says", welcome_text)
             input_box = self.query_one("#chat-input")
             input_box.focus()
             self.mounted = True

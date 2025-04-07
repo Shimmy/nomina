@@ -1,23 +1,48 @@
-#chat-input {
-    height: 4;
-}
-#send-button {
-    height: 100%;
-    content-align: center middle;
+#chat-input-container {
+    width: 100%;
+    padding: 0 0;
+    height: auto;
+    border: hidden #000;
 }
 
-#chat-history {
-    height: 92%;
-    overflow-y: auto;
+#chat-input {
+    height: 3;
+    background: #2a2a2a;
+    border: none;
+    min-width: 0;
+    width: 1fr;
+}
+
+#send-button {    
+    height: 3;
+    margin-left: 0;
+    background: #444;    
+    border: none;
+    
+}
+#file-viewer {
+    height: 100%;
+}
+#chat-history {    
+    border: blank #000
+}
+#chat-history .text-area--cursor-line {
+    background: transparent;
+}
+#file-content {
+    border: hidden;
 }
 
 #chat-panel {
     height: 100%;
-    max-height: 100%;
-    overflow: auto;
 }
+.chat-input .text-area--cursor-line {
+    background: transparent;
+}
+#file-tabs {
+    background: #272822; /* or match your panel bg */
 
-#main-container {
-    height: 100%;
-    max-height: 100%;
+}
+#status-bar {
+
 }
