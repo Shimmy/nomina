@@ -66,7 +66,7 @@ class FileViewer(Container):
     def compose(self):
         yield Static("Activity", id="file-title")
         yield TabsWithClose(id="file-tabs")
-        yield TextArea.code_editor(id="file-content", read_only=True, soft_wrap=True)
+        yield TextArea.code_editor(id="file-content", read_only=True, soft_wrap=True, theme="vscode_dark")
 
     def set_content(self, title: str, content: str, language: str = "python") -> None:
         tab_id = _sanitize_id(title)
@@ -129,7 +129,7 @@ class ChatPanel(Container):
         prefix = "You:" if sender == "user" else f"\U0001F916 {sender}:"
         #prefix = sender
         current_text = chat_area.text
-        new_text = current_text + f"{prefix}\n{message}\n"
+        new_text = current_text + f"{prefix}\n---------------\n{message}\n\n"
         chat_area.text = new_text
 
         line_count = new_text.count('\n')
