@@ -64,9 +64,9 @@ class FileViewer(Container):
         self.tab_contents = {}
 
     def compose(self):
-        yield Static("Files", id="file-title")
+        yield Static("Activity", id="file-title")
         yield TabsWithClose(id="file-tabs")
-        yield TextArea(id="file-content", read_only=True, language="python")
+        yield TextArea.code_editor(id="file-content", read_only=True)
 
     def set_content(self, title: str, content: str, language: str = "python") -> None:
         tab_id = _sanitize_id(title)
@@ -115,7 +115,7 @@ class FileViewer(Container):
 class ChatPanel(Container):
     def compose(self):
         yield Static("Chat History", id="chat-title")
-        yield TextArea(read_only=True, id="chat-history")
+        yield TextArea.code_editor(read_only=True, id="chat-history", language="markdown")
         yield Horizontal(
             TextArea(id="chat-input", classes="chat-input"),
             Button("Send", id="send-button"),
@@ -203,7 +203,7 @@ class ModelPicker(Container):
 
 class SimpleTUI(App):
     CSS_PATH = "style.css"
-    TITLE = "Simple TUI"
+    TITLE = "Nomina"
     BINDINGS = [
         Binding("q", "quit", "Quit", key_display="q"),
         Binding("f1", "help", "Help", key_display="F1"),
@@ -215,7 +215,7 @@ class SimpleTUI(App):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.working_dir = os.getcwd()
-
+        self.mounted = False
     def compose(self) -> Container:
         yield Header()
         yield Container(
@@ -230,14 +230,17 @@ class SimpleTUI(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        chat_panel = self.query_one("#chat-panel", ChatPanel)
-        welcome_text = f"Welcome to Simple TUI!\n\nWorking in directory: {self.working_dir}"
-        chat_panel.add_message("assistant", welcome_text)
-        input_box = self.query_one("#chat-input")
-        input_box.focus()
+        if not self.mounted:
+            chat_panel = self.query_one("#chat-panel", ChatPanel)
+            welcome_text = f"Welcome to Nomina!\n\nWorking in directory: {self.working_dir}"
+            chat_panel.add_message("assistant", welcome_text)
+            input_box = self.query_one("#chat-input")
+            input_box.focus()
+            self.mounted = True
+
 
     def action_help(self) -> None:
-        help_text = """Simple TUI Help:
+        help_text = """Nomina Help:
 
 - Enter messages then click Send
 - The file pane on the right shows content
