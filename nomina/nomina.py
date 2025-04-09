@@ -46,6 +46,13 @@ You are Nomina, an autonomous coding and shell assistant.
 - Be careful with shell commands.
 """
 
+# Append contents of nomina-rules.txt if it exists
+rules_path = os.path.join(os.getcwd(), 'nomina-rules.txt')
+if os.path.isfile(rules_path):
+    with open(rules_path, 'r') as f:
+        rules = f.read()
+        system_prompt += "\n" + rules
+
 
 class StatusBar(Static):
     def __init__(self, *args, **kwargs):
