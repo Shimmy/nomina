@@ -49,7 +49,7 @@ class ChatPayload(BaseModel):
 
 
 class NominaLlm:
-    def __init__(self, api_key=None, site_url="", site_name="", default_model="openrouter/quasar-alpha"):
+    def __init__(self, api_key=None, site_url="", site_name="", default_model="openrouter/optimus-alpha"):
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
         self.site_url = site_url
         self.site_name = site_name

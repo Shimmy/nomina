@@ -14,8 +14,10 @@ dependencies = [
     "requests",
     "pydantic",
     "textual",
-    "textual[syntax]"
+    "textual[syntax]",
+    "flask"
 ]
 
 [project.scripts]
 nomina = "nomina.nomina:main"
+nomina_api = "nomina.server:main"
