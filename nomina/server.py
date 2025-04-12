@@ -2,6 +2,7 @@
 Flask API server for Nomina
 """
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS from flask_cors
 import os
 import subprocess
 import traceback
@@ -9,6 +10,7 @@ import argparse
 from nomina.nominallm import NominaLlm
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Initialize global variables - will be set in main()
 working_dir = None

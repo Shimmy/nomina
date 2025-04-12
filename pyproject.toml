@@ -15,7 +15,8 @@ dependencies = [
     "pydantic",
     "textual",
     "textual[syntax]",
-    "flask"
+    "flask",
+    "flask-cors"
 ]
 
 [project.scripts]
