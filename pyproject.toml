@@ -21,4 +21,4 @@ dependencies = [
 
 [project.scripts]
 nomina = "nomina.nomina:main"
-nomina_api = "nomina.server:main"
+nomina_api = "nomina.server_claude:main"
