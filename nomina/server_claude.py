@@ -45,7 +45,7 @@ def chat():
             capture_output=True,
             text=True,
             cwd=working_dir,
-            timeout=30,
+            timeout=600,
             env=env
         )
 
@@ -53,7 +53,7 @@ def chat():
         # Check if the command was successful
         if process.returncode != 0:
             raise Exception(f"Claude Code failed with error: {process.stderr}")
-            
+
         ANSI_ESCAPE_PATTERN = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')    
         reply = ANSI_ESCAPE_PATTERN.sub('', process.stdout).strip()
         history.append(make_text_message("assistant", reply))
