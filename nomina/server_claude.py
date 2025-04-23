@@ -38,9 +38,10 @@ def chat():
     try:
         # Use Claude Code CLI here
         process = subprocess.run(
-            ["claude", f'"{message}"', "-p", "--dangerously-skip-permissions"],
+            ["claude", message, "-p", "--dangerously-skip-permissions"],
             capture_output=True,
             text=True,
+            timeout=30,
             cwd=working_dir
         )
         
