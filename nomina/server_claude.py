@@ -7,6 +7,7 @@ import os
 import subprocess
 import traceback
 import argparse
+import re
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -53,8 +54,8 @@ def chat():
         if process.returncode != 0:
             raise Exception(f"Claude Code failed with error: {process.stderr}")
             
-        reply = process.stdout.strip()
-        
+        ANSI_ESCAPE_PATTERN = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')    
+        reply = ANSI_ESCAPE_PATTERN.sub('', process.stdout).strip()
         history.append(make_text_message("assistant", reply))
         
         return jsonify({
