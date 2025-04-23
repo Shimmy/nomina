@@ -38,15 +38,13 @@ def chat():
     try:
         # Use Claude Code CLI here
         process = subprocess.run(
-            ["claude", message, "-p", "--dangerously-skip-permissions"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.DEVNULL,  # disconnect stdin
+            ["script", "-q", "-c", f"claude -p '{message}' --dangerously-skip-permissions", "/dev/null"],
+            capture_output=True,
             text=True,
-            timeout=300,
-            cwd=working_dir,            
+            cwd=working_dir,
+            timeout=30
         )
-        
+
         # Check if the command was successful
         if process.returncode != 0:
             raise Exception(f"Claude Code failed with error: {process.stderr}")
