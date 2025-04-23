@@ -35,15 +35,19 @@ def chat():
     message = data['message']
     history.append(make_text_message("user", message))
     
+    env = os.environ.copy()
+    env["PATH"] = "/usr/local/bin:/usr/bin:" + env["PATH"] 
     try:
         # Use Claude Code CLI here
         process = subprocess.run(
-            ["script", "-q", "-c", f"claude -p '{message}' --dangerously-skip-permissions", "/dev/null"],
+            ["/usr/bin/script", "-q", "-c", f"claude -p '{message}' --dangerously-skip-permissions", "/dev/null"],
             capture_output=True,
             text=True,
             cwd=working_dir,
-            timeout=30
+            timeout=30,
+            env=env
         )
+
 
         # Check if the command was successful
         if process.returncode != 0:
