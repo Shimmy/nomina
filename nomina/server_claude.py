@@ -41,7 +41,7 @@ def chat():
             ["claude", message, "-p", "--dangerously-skip-permissions"],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=300,
             cwd=working_dir
         )
         
