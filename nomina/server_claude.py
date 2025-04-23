@@ -36,14 +36,15 @@ def chat():
     history.append(make_text_message("user", message))
     
     try:
-       process = subprocess.run(
-           ["claude", "-p", message, "--dangerously-skip-permissions"],
-           capture_output=True,
-           text=True,
-           cwd=working_dir,
-           timeout=300,
-           input=""
-       )
+        # Use Claude Code CLI here
+        process = subprocess.run(
+            ["claude", message, "-p", "--dangerously-skip-permissions"],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            cwd=working_dir,
+            input=""
+        )
         
         # Check if the command was successful
         if process.returncode != 0:
