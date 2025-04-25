@@ -37,23 +37,33 @@ def chat():
     history.append(make_text_message("user", message))
     
     env = os.environ.copy()
-    env["PATH"] = "/usr/local/bin:/usr/bin:" + env["PATH"] 
+    env["PATH"] = "/usr/local/bin:/usr/bin:" + env["PATH"]
+    
+    # Import tempfile module if not already imported
+    import tempfile
     try:
-        # Use Claude Code CLI here
+        # Create a temporary file to store the message
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
+            temp_file.write(message)
+            message_file_path = temp_file.name
+        
+        # Use the file to pass the message content to Claude
         process = subprocess.run(
-            ["/usr/bin/script", "-q", "-c", f"claude -p '{message}' --dangerously-skip-permissions", "/dev/null"],
+            ["/usr/bin/script", "-q", "-c", f"claude -f {message_file_path} --dangerously-skip-permissions", "/dev/null"],
             capture_output=True,
             text=True,
             cwd=working_dir,
             timeout=600,
             env=env
         )
-
-
+        
+        # Clean up the temporary file
+        os.unlink(message_file_path)
+        
         # Check if the command was successful
         if process.returncode != 0:
             raise Exception(f"Claude Code failed with error: {process.stderr}")
-
+            
         ANSI_ESCAPE_PATTERN = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')    
         reply = ANSI_ESCAPE_PATTERN.sub('', process.stdout).strip()
         history.append(make_text_message("assistant", reply))
