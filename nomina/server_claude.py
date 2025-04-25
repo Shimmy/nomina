@@ -42,14 +42,20 @@ def chat():
     # Import tempfile module if not already imported
     import tempfile
     try:
-        # Create a temporary file to store the message
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as temp_file:
-            temp_file.write(message)
-            message_file_path = temp_file.name
+        # A safer approach that avoids shell injection entirely
+        # Create a script file with the commands to run
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+            script_file.write('#!/bin/bash\n')
+            script_file.write(f'echo $PROMPT | claude --dangerously-skip-permissions\n')
+            script_path = script_file.name
         
-        # Use the file to pass the message content to Claude
+        # Make the script executable
+        os.chmod(script_path, 0o755)
+        
+        # Run the script with the message as an environment variable
+        env['PROMPT'] = message
         process = subprocess.run(
-            ["/usr/bin/script", "-q", "-c", f"claude -f {message_file_path} --dangerously-skip-permissions", "/dev/null"],
+            ["/usr/bin/script", "-q", "-c", script_path, "/dev/null"],
             capture_output=True,
             text=True,
             cwd=working_dir,
@@ -57,8 +63,8 @@ def chat():
             env=env
         )
         
-        # Clean up the temporary file
-        os.unlink(message_file_path)
+        # Clean up the temporary script file
+        os.unlink(script_path)
         
         # Check if the command was successful
         if process.returncode != 0:
