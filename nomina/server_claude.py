@@ -46,7 +46,7 @@ def chat():
         # Create a script file with the commands to run
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
             script_file.write('#!/bin/bash\n')
-            script_file.write(f'echo $PROMPT | claude --dangerously-skip-permissions\n')
+            script_file.write(f'echo $PROMPT | claude -p --dangerously-skip-permissions\n')
             script_path = script_file.name
         
         # Make the script executable
